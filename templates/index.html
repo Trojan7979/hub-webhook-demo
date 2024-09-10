@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Webhook Events</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .event-container {
+            margin: 0 auto;
+            max-width: 700px;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        .event {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-left: 6px solid #007bff;
+            border-radius: 6px;
+        }
+
+        .timestamp, .request_id {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .details {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .action {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .author {
+            font-weight: bold;
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 16px;
+            color: #007bff;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>GitHub Webhook Events</h1>
+
+    <div id="loading" style="display: none;">Loading...</div> <!-- Loading Indicator -->
+
+    <div class="event-container" id="event-container">
+        <!-- Events will be dynamically inserted here -->
+    </div>
+
+    <script>
+        // Function to fetch data from the backend every 15 seconds
+        async function fetchEvents() {
+            try {
+                // Show the loading indicator
+                document.getElementById('loading').style.display = 'block';
+
+                const response = await fetch('/events'); // Call the Flask API
+                const data = await response.json();
+                console.log(data)
+
+                // Hide the loading indicator
+                document.getElementById('loading').style.display = 'none';
+
+                // Clear the container before inserting new events
+                const eventContainer = document.getElementById('event-container');
+                eventContainer.innerHTML = '';
+
+                //Check if the data is empty
+                if (data.length === 0) {
+                    eventContainer.innerHTML = '<p>No events found</p>';
+                    return;
+                }
+
+                //Iterate over the data and create UI elements
+                data.forEach(event => {
+                    const eventDiv = document.createElement('article'); // Using <article> for semantic HTML
+                    eventDiv.className = 'event';
+                    eventDiv.innerHTML = `
+                        <header class="details">
+                            <div class="author">${event.author}</div>
+                            <div class="action">${event.action}</div>
+                        </header>
+                        <div>From: <span>${event.from_branch ? event.from_branch : 'N/A'}</span> → To: <span>${event.to_branch}</span></div>
+                        <time class="timestamp" datetime="${event.timestamp}">On ${event.timestamp}</time> <!-- Using <time> for better semantics -->
+                        <div class="request_id">Request ID: ${event.request_id}</div>
+                    `;
+                    eventContainer.appendChild(eventDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                const eventContainer = document.getElementById('event-container');
+                eventContainer.innerHTML = '<p>Error loading events. Please try again later.</p>';
+            }
+        }
+
+        //Fetch events every 15 seconds
+        setInterval(fetchEvents, 15000);
+        fetchEvents(); //Initial call to load events on page load
+    </script>
+    
+</body>
+</html>
